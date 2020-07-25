@@ -1,6 +1,11 @@
 package editor
 
-import "github.com/gdamore/tcell"
+import (
+	"log"
+
+	"github.com/gdamore/tcell"
+	"github.com/jinayjain/jai/file"
+)
 
 /*
 
@@ -13,13 +18,13 @@ Editor:
 
 Methods:
 
-- add a character
-- delete a character
-- add a line
-- delete a line
-- split a line
-- move the window
-- move the cursor
+[x] add a character
+[x] delete a character
+[x] add a line
+[x] delete a line
+[ ] split a line
+[ ] move the window
+[x] move the cursor
 
 */
 
@@ -41,17 +46,25 @@ type Editor struct {
 }
 
 // NewEditor creates and returns an editor instance
-func NewEditor() *Editor {
+func NewEditor(path string) *Editor {
 	e := Editor{}
-	e.Buffer = append(e.Buffer, []rune("Hello"))
-	e.Buffer = append(e.Buffer, []rune("World"))
+
+	if path != "" {
+		f, err := file.Read(path)
+
+		if err != nil {
+			log.Panicln(err)
+		}
+
+		e.Buffer = append(e.Buffer, f...)
+	}
 
 	return &e
 }
 
 // Cursor returns the position of the cursor in the buffer
 func (e *Editor) Cursor() (int, int) {
-	return e.cx - e.ox, e.cy
+	return e.BuftoWin(e.cx, e.cy)
 }
 
 // MoveCursor moves the cursor within boundaries
@@ -93,15 +106,23 @@ func (e *Editor) inputInsert(ev *tcell.EventKey) {
 	switch key {
 	case tcell.KeyRune:
 		ch := ev.Rune()
-		e.Buffer[e.cy] = append(e.Buffer[e.cy], ch)
+
+		e.Buffer[e.cy] = append(e.Buffer[e.cy], 0)
+		copy(e.Buffer[e.cy][e.cx+1:], e.Buffer[e.cy][e.cx:])
+		e.Buffer[e.cy][e.cx] = ch
+
+		e.MoveCursor(1, 0)
+
 	case tcell.KeyBackspace:
 	case tcell.KeyBackspace2:
-		if len(e.Buffer[e.cy]) > 0 {
-			e.Buffer[e.cy] = e.Buffer[e.cy][:len(e.Buffer[e.cy])-1]
+		if len(e.Buffer[e.cy]) > 0 && e.cx > 0 {
+			e.Buffer[e.cy] = append(e.Buffer[e.cy][:e.cx-1], e.Buffer[e.cy][e.cx:]...)
+			e.MoveCursor(-1, 0)
 		}
+
 	case tcell.KeyEnter:
 		e.Buffer = append(e.Buffer, []rune{})
-		e.cy++
+		e.MoveCursor(0, 1)
 	case tcell.KeyEscape:
 		e.Mode = Edit
 	}
@@ -121,6 +142,22 @@ func (e *Editor) inputEdit(ev *tcell.EventKey) {
 			e.MoveCursor(0, -1)
 		case 'l':
 			e.MoveCursor(1, 0)
+		case 'd':
+			switch {
+			case len(e.Buffer) == 0:
+			case len(e.Buffer) == 1:
+				e.Buffer = make([][]rune, 1)
+			default:
+				e.Buffer = append(e.Buffer[:e.cy], e.Buffer[e.cy+1:]...)
+			}
+			e.MoveCursor(0, 0) // hacky way of making sure the cursor is within bounds ;)
+		case 'o':
+			e.Buffer = append(e.Buffer, []rune{})
+			copy(e.Buffer[e.cy+2:], e.Buffer[e.cy+1:])
+			e.Buffer[e.cy+1] = []rune{}
+			e.MoveCursor(0, 1)
+			e.Mode = Insert
+
 		case 'i':
 			e.Mode = Insert
 		}

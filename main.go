@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gdamore/tcell"
 	"github.com/jinayjain/jai/editor"
@@ -21,7 +22,12 @@ func main() {
 	w, h := s.Size()
 	fmt.Println(w, h)
 
-	ed := editor.NewEditor()
+	var path string
+	if len(os.Args) > 1 {
+		path = os.Args[1]
+	}
+
+	ed := editor.NewEditor(path)
 	win := ui.NewWindow(ed, 0, 0, w, h)
 
 	fmt.Println(win.Box())
