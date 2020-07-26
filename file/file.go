@@ -19,3 +19,19 @@ func Read(path string) (lines [][]rune, err error) {
 	}
 	return
 }
+
+func Write(path string, contents [][]rune) (err error) {
+	f, err := os.Create(path)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	for i, line := range contents {
+		f.WriteString(string(line))
+		if i != len(contents)-1 {
+			f.WriteString("\n")
+		}
+	}
+	return
+}

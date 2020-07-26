@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/gdamore/tcell"
 	"github.com/jinayjain/jai/file"
@@ -62,24 +61,34 @@ type Editor struct {
 
 // NewEditor creates and returns an editor instance
 func NewEditor(path string, x1, y1, x2, y2 int) *Editor {
-	e := Editor{Path: path}
+	e := Editor{}
 	e.Window = NewWindow(x1, y1, x2, y2)
+	e.Load(path)
 
+	return &e
+}
+
+func (e *Editor) Load(path string) {
+	e.Path = path
 	if path != "" {
 		f, err := file.Read(path)
 
-		if err != nil {
-			log.Panicln(err)
+		if err == nil {
+			e.Buffer = append(e.Buffer, f...)
 		}
-
-		e.Buffer = append(e.Buffer, f...)
 	}
 
 	if len(e.Buffer) == 0 {
 		e.Buffer = make([][]rune, 1)
 	}
+}
 
-	return &e
+// Save is used to write the buffer to a path
+func (e *Editor) Save(path string) {
+	err := file.Write(path, e.Buffer)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Cursor returns the window position of the cursor in the buffer
@@ -111,6 +120,11 @@ func (e *Editor) MoveCursor(dx, dy int) {
 
 // Input performs an editor action based on user input
 func (e *Editor) Input(ev *tcell.EventKey) {
+	if ev.Key() == tcell.KeyCtrlS {
+		e.Save(e.Path)
+		return
+	}
+
 	switch e.Mode {
 	case Write:
 		e.inputInsert(ev)
