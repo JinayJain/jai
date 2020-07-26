@@ -1,8 +1,6 @@
 package ui
 
-import (
-	"github.com/gdamore/tcell"
-)
+import "github.com/gdamore/tcell"
 
 /*
 
@@ -20,21 +18,23 @@ when drawing to the screen:
 type Window struct {
 	x1, y1 int
 	x2, y2 int
-	View   View
 }
 
-// View is a drawable widget used by Window
+// View is a drawable view on the screen
 type View interface {
-	// Draw gives coordinates in window space, expecting a rune or false bool
-	Draw(int, int) (rune, bool)
-
-	// Cursor returns the window coordinates of where to draw the cursor (when in focus)
+	Input(*tcell.EventKey)
+	Draw(s tcell.Screen)
 	Cursor() (int, int)
+	Status() string
 }
 
 // NewWindow creates and returns a UI window
-func NewWindow(v View, x1, y1, x2, y2 int) *Window {
-	return &Window{x1, y1, x2, y2, v}
+func NewWindow(x1, y1, x2, y2 int) *Window {
+	return &Window{x1, y1, x2, y2}
+}
+
+func (w *Window) Size() (int, int) {
+	return w.x2 - w.x1, w.y2 - w.y1
 }
 
 // Box returns the x1, y1, x2, and y2 of the window
@@ -45,23 +45,6 @@ func (w *Window) Box() (int, int, int, int) {
 // SetBox updates the bounding box of the window
 func (w *Window) SetBox(x1, y1, x2, y2 int) {
 	w.x1, w.y1, w.x2, w.y2 = x1, y1, x2, y2
-}
-
-// Draw renders the current window view onto the screen
-func (w *Window) Draw(s tcell.Screen, focused bool) {
-
-	if focused {
-		s.ShowCursor(w.WintoScr(w.View.Cursor()))
-	}
-
-	for i := w.y1; i <= w.y2; i++ {
-		for j := w.x1; j <= w.x2; j++ {
-			r, valid := w.View.Draw(w.ScrtoWin(j, i))
-			if valid {
-				s.SetContent(j, i, r, nil, tcell.StyleDefault)
-			}
-		}
-	}
 }
 
 // ScrtoWin converts a screen coordinate to window space

@@ -1,6 +1,7 @@
-package editor
+package ui
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gdamore/tcell"
@@ -34,20 +35,35 @@ type Mode int
 // The possible modes the editor can be in
 const (
 	Edit Mode = iota
-	Insert
+	Write
 )
+
+func (m Mode) String() string {
+	switch m {
+	case Edit:
+		return "Edit"
+	case Write:
+		return "Write"
+	default:
+		return fmt.Sprintf("%d", int(m))
+	}
+}
 
 // Editor defines an editor window for editing a single file
 type Editor struct {
+	Window *Window
 	Buffer [][]rune
+	Path   string
 	Mode   Mode
 	cx, cy int // cursor's x and y position in the buffer
 	ox, oy int // x and y offset of the viewing window
+	cnt    int
 }
 
 // NewEditor creates and returns an editor instance
-func NewEditor(path string) *Editor {
-	e := Editor{}
+func NewEditor(path string, x1, y1, x2, y2 int) *Editor {
+	e := Editor{Path: path}
+	e.Window = NewWindow(x1, y1, x2, y2)
 
 	if path != "" {
 		f, err := file.Read(path)
@@ -59,12 +75,16 @@ func NewEditor(path string) *Editor {
 		e.Buffer = append(e.Buffer, f...)
 	}
 
+	if len(e.Buffer) == 0 {
+		e.Buffer = make([][]rune, 1)
+	}
+
 	return &e
 }
 
-// Cursor returns the position of the cursor in the buffer
+// Cursor returns the window position of the cursor in the buffer
 func (e *Editor) Cursor() (int, int) {
-	return e.BuftoWin(e.cx, e.cy)
+	return e.Window.WintoScr(e.BuftoWin(e.cx, e.cy))
 }
 
 // MoveCursor moves the cursor within boundaries
@@ -92,7 +112,7 @@ func (e *Editor) MoveCursor(dx, dy int) {
 // Input performs an editor action based on user input
 func (e *Editor) Input(ev *tcell.EventKey) {
 	switch e.Mode {
-	case Insert:
+	case Write:
 		e.inputInsert(ev)
 	case Edit:
 		e.inputEdit(ev)
@@ -156,16 +176,38 @@ func (e *Editor) inputEdit(ev *tcell.EventKey) {
 			copy(e.Buffer[e.cy+2:], e.Buffer[e.cy+1:])
 			e.Buffer[e.cy+1] = []rune{}
 			e.MoveCursor(0, 1)
-			e.Mode = Insert
+			e.Mode = Write
 
 		case 'i':
-			e.Mode = Insert
+			e.Mode = Write
 		}
 	}
 }
 
-// Draw implements the View interface
-func (e *Editor) Draw(x, y int) (rune, bool) {
+// Draw renders the editor to the screen
+func (e *Editor) Draw(s tcell.Screen) {
+	x1, y1, x2, y2 := e.Window.Box()
+
+	for i := x1; i <= x2; i++ {
+		for j := y1; j <= y2; j++ {
+			r, valid := e.getRune(e.Window.ScrtoWin(i, j))
+			if valid {
+				s.SetContent(i, j, r, nil, tcell.StyleDefault)
+			}
+		}
+	}
+}
+
+func (e *Editor) Status() (status string) {
+	if e.Path != "" {
+		status += fmt.Sprintf("\"%s\" ", e.Path)
+	}
+
+	status += fmt.Sprintf("%s Mode", e.Mode.String())
+	return status
+}
+
+func (e *Editor) getRune(x, y int) (rune, bool) {
 	x, y = e.WintoBuf(x, y)
 
 	if y >= len(e.Buffer) {
