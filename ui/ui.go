@@ -33,6 +33,7 @@ func NewWindow(x1, y1, x2, y2 int) *Window {
 	return &Window{x1, y1, x2, y2}
 }
 
+// Size returns the width and height of the window
 func (w *Window) Size() (int, int) {
 	return w.x2 - w.x1, w.y2 - w.y1
 }

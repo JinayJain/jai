@@ -68,6 +68,7 @@ func NewEditor(path string, x1, y1, x2, y2 int) *Editor {
 	return &e
 }
 
+// Load reads the given file into the buffer.
 func (e *Editor) Load(path string) {
 	e.Path = path
 	if path != "" {
@@ -96,9 +97,8 @@ func (e *Editor) Cursor() (int, int) {
 	return e.Window.WintoScr(e.BuftoWin(e.cx, e.cy))
 }
 
-// MoveCursor moves the cursor within boundaries
+// MoveCursor moves the cursor within boundaries, shifting the offset if necessary
 func (e *Editor) MoveCursor(dx, dy int) {
-	// TODO: If the cursor goes past window bounds, shift the offset
 
 	nx, ny := e.cx+dx, e.cy+dy
 
@@ -113,6 +113,19 @@ func (e *Editor) MoveCursor(dx, dy int) {
 	}
 	if nx > len(e.Buffer[ny]) {
 		nx = len(e.Buffer[ny])
+	}
+
+	wx, wy := e.BuftoWin(nx, ny)
+	if wy < e.Window.y1 {
+		e.oy -= e.Window.y1 - wy
+	} else if wy > e.Window.y2 {
+		e.oy += wy - e.Window.y2
+	}
+
+	if wx < e.Window.x1 {
+		e.ox -= e.Window.x1 - wx
+	} else if wx > e.Window.x2 {
+		e.ox += wx - e.Window.x2
 	}
 
 	e.cx, e.cy = nx, ny
@@ -212,12 +225,13 @@ func (e *Editor) Draw(s tcell.Screen) {
 	}
 }
 
+// Status returns the status string for display in the status bar
 func (e *Editor) Status() (status string) {
 	if e.Path != "" {
-		status += fmt.Sprintf("\"%s\" ", e.Path)
+		status += fmt.Sprintf("%s ", e.Path)
 	}
 
-	status += fmt.Sprintf("%s Mode", e.Mode.String())
+	status += fmt.Sprintf("[%s Mode]", e.Mode.String())
 	return status
 }
 

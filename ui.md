@@ -1,4 +1,4 @@
-UI System
+# UI System
 
 Manager
 
@@ -9,6 +9,7 @@ Manager
 
 Editor
 
+Time to start editing :)
 Status Bar
 
 -   what does the status bar show?
@@ -20,3 +21,4 @@ Status Bar
 -   one status bar per manager
 -   how does the status bar receive data to render?
     -   does the manager provide that data?
+-   has an "ask" mode which routes all input to the status bar until enter, sending that response to whoever called the function _somehow_
