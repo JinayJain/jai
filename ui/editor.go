@@ -131,6 +131,18 @@ func (e *Editor) MoveCursor(dx, dy int) {
 	e.cx, e.cy = nx, ny
 }
 
+func (e *Editor) MoveWindow(dx, dy int) {
+	nx, ny := e.ox+dx, e.oy+dy
+
+	if nx < 0 {
+		nx = 0
+	}
+	if ny < 0 {
+		ny = 0
+	}
+	e.ox, e.oy = nx, ny
+}
+
 // Input performs an editor action based on user input
 func (e *Editor) Input(ev *tcell.EventKey) {
 	if ev.Key() == tcell.KeyCtrlS {
@@ -169,7 +181,11 @@ func (e *Editor) inputInsert(ev *tcell.EventKey) {
 
 	case tcell.KeyEnter:
 		e.Buffer = append(e.Buffer, []rune{})
+		copy(e.Buffer[e.cy+1:], e.Buffer[e.cy:])
+		e.Buffer[e.cy+1] = e.Buffer[e.cy][e.cx:]
+		e.Buffer[e.cy] = e.Buffer[e.cy][:e.cx]
 		e.MoveCursor(0, 1)
+		e.cx = 0
 	case tcell.KeyEscape:
 		e.Mode = Edit
 	}
