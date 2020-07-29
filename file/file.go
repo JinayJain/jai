@@ -20,6 +20,7 @@ func Read(path string) (lines [][]rune, err error) {
 	return
 }
 
+// Write saves the contents to a given path
 func Write(path string, contents [][]rune) (err error) {
 	f, err := os.Create(path)
 	if err != nil {

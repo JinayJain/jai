@@ -33,7 +33,7 @@ main:
 		switch ev := ev.(type) {
 		case *tcell.EventKey:
 			switch ev.Key() {
-			case tcell.KeyCtrlC:
+			case tcell.KeyCtrlQ:
 				break main
 			default:
 				m.Input(ev)
