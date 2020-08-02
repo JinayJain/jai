@@ -22,8 +22,8 @@ Methods:
 [x] delete a character
 [x] add a line
 [x] delete a line
-[ ] split a line
-[ ] move the window
+[x] split a line
+[x] move the window
 [x] move the cursor
 
 */
@@ -131,6 +131,12 @@ func (e *Editor) MoveCursor(dx, dy int) {
 	e.cx, e.cy = nx, ny
 }
 
+// SetCursor moves the editor cursor to the point given
+func (e *Editor) SetCursor(x, y int) {
+	e.MoveCursor(x-e.cx, y-e.cy)
+}
+
+// MoveWindow shifts the editor window
 func (e *Editor) MoveWindow(dx, dy int) {
 	nx, ny := e.ox+dx, e.oy+dy
 
@@ -205,6 +211,8 @@ func (e *Editor) inputEdit(ev *tcell.EventKey) {
 			e.MoveCursor(0, -1)
 		case 'l':
 			e.MoveCursor(1, 0)
+		case ';':
+			e.SetCursor(len(e.Buffer[e.cy]), e.cy)
 		case 'd':
 			switch {
 			case len(e.Buffer) == 0:
